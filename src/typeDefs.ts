@@ -17,5 +17,6 @@ export const typeDefs = gql`
     login(email: String!, password: String!): User
     createSubscription(source: String!, ccLast4: String!): User
     changeCreditCard(source: String!, ccLast4: String!): User
+    cancelSubscription: User
   }
 `;
