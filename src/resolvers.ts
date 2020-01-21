@@ -1,8 +1,8 @@
 import { stripe } from './stripe';
-import { IResolvers } from "graphql-tools";
-import * as bcrypt from "bcrypt";
+import { IResolvers } from 'graphql-tools';
+import * as bcrypt from 'bcrypt';
 
-import { User } from "./entity/User";
+import { User } from './entity/User';
 
 export const resolvers: IResolvers = {
   Query: {
@@ -39,9 +39,9 @@ export const resolvers: IResolvers = {
 
       return user;
     },
-    createSubscription: async (_, {source}, {req}) => {
+    createSubscription: async (_, { source, ccLast4 }, { req }) => {
       if (!req.session || !req.session.userId) {
-        throw new Error("not authenticated");
+        throw new Error('not authenticated');
       }
 
       const user = await User.findOne(req.session.userId);
@@ -55,13 +55,32 @@ export const resolvers: IResolvers = {
         source,
         plan: process.env.PLAN
       });
-      
+
       user.stripeId = customer.id;
-      user.type = "test" // plan nickname 
+      user.type = 'test'; // plan nickname
+      user.ccLast4 = ccLast4;
 
       await user.save();
 
-      return user; 
+      return user;
+    },
+    changeCreditCard: async (_, { source, ccLast4 }, { req }) => {
+      if (!req.session || !req.session.userId) {
+        throw new Error('not authenticated');
+      }
+
+      const user = await User.findOne(req.session.userId);
+
+      if (!user || !user.stripeId || user.type !== 'test') {
+        throw new Error();
+      }
+      await stripe.customers.update(user.stripeId, { source });
+
+      user.ccLast4 = ccLast4;
+
+      await user.save();
+      
+      return user;
     }
   }
 };
